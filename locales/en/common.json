@@ -132,6 +132,7 @@
     "reply_to": "Reply",
     "reply_all_to": "Reply All",
     "forward_message": "Forward",
+    "from": "From",
     "to": "To",
     "cc": "CC",
     "bcc": "BCC",
@@ -140,6 +141,9 @@
     "send": "Send",
     "cancel": "Cancel",
     "attach": "Attach files",
+    "saving": "Saving...",
+    "draft_saved": "Draft saved",
+    "failed_to_save": "Failed to save",
     "discard_draft_confirm": "You have unsaved changes. Do you want to discard this draft?",
     "quote": {
       "reply_header": "On {{date}}, {{sender}} wrote:",

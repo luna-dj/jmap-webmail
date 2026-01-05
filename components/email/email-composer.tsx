@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { X, Paperclip, Send, Save, Check, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
+import type { Identity } from "@/lib/jmap/types";
 
 interface EmailComposerProps {
   onSend?: (data: {
@@ -97,8 +98,29 @@ export function EmailComposer({
   const lastSavedDataRef = useRef<string>("");
   const [attachments, setAttachments] = useState<Array<{ file: File; blobId?: string; uploading?: boolean; error?: boolean }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [identity, setIdentity] = useState<Identity | null>(null);
 
-  const { client } = useAuthStore();
+  const { client, username } = useAuthStore();
+
+  // Fetch identity from JMAP
+  useEffect(() => {
+    const fetchIdentity = async () => {
+      if (!client || !username) return;
+      
+      try {
+        const identities = await client.getIdentities();
+        if (identities.length > 0) {
+          // Use the first identity (or find one matching the username)
+          const matchingIdentity = identities.find((id) => id.email === username);
+          setIdentity(matchingIdentity || identities[0]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch identity:', error);
+      }
+    };
+
+    fetchIdentity();
+  }, [client, username]);
 
   // Handle file selection
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -301,23 +323,23 @@ export function EmailComposer({
     <div className={cn("flex flex-col h-full bg-background border rounded-lg", className)}>
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold">New Message</h3>
+          <h3 className="font-semibold">{t('new_message')}</h3>
           {saveStatus === 'saving' && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Save className="w-3 h-3 animate-pulse" />
-              <span>Saving...</span>
+              <span>{t('saving')}</span>
             </div>
           )}
           {saveStatus === 'saved' && (
             <div className="flex items-center gap-1 text-xs text-green-600">
               <Check className="w-3 h-3" />
-              <span>Draft saved</span>
+              <span>{t('draft_saved')}</span>
             </div>
           )}
           {saveStatus === 'error' && (
             <div className="flex items-center gap-1 text-xs text-red-600">
               <X className="w-3 h-3" />
-              <span>Failed to save</span>
+              <span>{t('failed_to_save')}</span>
             </div>
           )}
         </div>
@@ -328,8 +350,19 @@ export function EmailComposer({
 
       <div className="flex-1 flex flex-col">
         <div className="space-y-2 px-4 py-3 border-b">
+          {identity && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground w-16">{t('from')}:</span>
+              <Input
+                type="text"
+                value={identity.name && identity.name !== identity.email ? `${identity.name} <${identity.email}>` : identity.email}
+                readOnly
+                className="flex-1 border-0 focus-visible:ring-0 bg-muted/50 cursor-not-allowed"
+              />
+            </div>
+          )}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground w-16">To:</span>
+            <span className="text-sm text-muted-foreground w-16">{t('to')}:</span>
             <Input
               type="email"
               placeholder="Recipient email addresses (comma separated)"
@@ -344,7 +377,7 @@ export function EmailComposer({
                 onClick={() => setShowCc(!showCc)}
                 className="text-xs"
               >
-                Cc
+                {t('cc')}
               </Button>
               <Button
                 variant="ghost"
@@ -352,14 +385,14 @@ export function EmailComposer({
                 onClick={() => setShowBcc(!showBcc)}
                 className="text-xs"
               >
-                Bcc
+                {t('bcc')}
               </Button>
             </div>
           </div>
 
           {showCc && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground w-16">Cc:</span>
+              <span className="text-sm text-muted-foreground w-16">{t('cc')}:</span>
               <Input
                 type="email"
                 placeholder="Cc recipients (comma separated)"
@@ -372,7 +405,7 @@ export function EmailComposer({
 
           {showBcc && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground w-16">Bcc:</span>
+              <span className="text-sm text-muted-foreground w-16">{t('bcc')}:</span>
               <Input
                 type="email"
                 placeholder="Bcc recipients (comma separated)"
@@ -384,7 +417,7 @@ export function EmailComposer({
           )}
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground w-16">Subject:</span>
+            <span className="text-sm text-muted-foreground w-16">{t('subject')}:</span>
             <Input
               type="text"
               placeholder="Subject"
@@ -395,12 +428,17 @@ export function EmailComposer({
           </div>
         </div>
 
-        <div className="flex-1 px-4 py-3">
+        <div className="flex-1 px-4 py-3 min-h-0 flex flex-col">
           <textarea
-            className="w-full h-full resize-none outline-none text-sm"
-            placeholder="Compose email..."
+            className="flex-1 w-full resize-none outline-none text-sm bg-background text-foreground placeholder:text-muted-foreground leading-relaxed p-3 border-0 focus:ring-0 overflow-auto"
+            placeholder={t('body_placeholder')}
             value={body}
             onChange={(e) => setBody(e.target.value)}
+            style={{ 
+              minHeight: '200px',
+              fontFamily: 'inherit',
+              lineHeight: '1.6'
+            }}
           />
         </div>
 
@@ -455,12 +493,12 @@ export function EmailComposer({
               onClick={() => fileInputRef.current?.click()}
             >
               <Paperclip className="w-4 h-4 mr-2" />
-              Attach
+              {t('attach')}
             </Button>
           </div>
           <Button onClick={handleSend}>
             <Send className="w-4 h-4 mr-2" />
-            Send
+            {t('send')}
           </Button>
         </div>
       </div>

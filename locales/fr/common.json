@@ -132,6 +132,7 @@
     "reply_to": "Répondre",
     "reply_all_to": "Répondre à tous",
     "forward_message": "Transférer",
+    "from": "De",
     "to": "À",
     "cc": "CC",
     "bcc": "CCI",
@@ -140,6 +141,9 @@
     "send": "Envoyer",
     "cancel": "Annuler",
     "attach": "Joindre des fichiers",
+    "saving": "Enregistrement...",
+    "draft_saved": "Brouillon enregistré",
+    "failed_to_save": "Échec de l'enregistrement",
     "discard_draft_confirm": "Vous avez des modifications non enregistrées. Voulez-vous supprimer ce brouillon ?",
     "quote": {
       "reply_header": "Le {{date}}, {{sender}} a écrit :",
