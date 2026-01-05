@@ -33,9 +33,9 @@ export function LanguageSwitcher({ className }: { className?: string }) {
               ? "bg-background shadow-sm font-medium"
               : "hover:bg-accent/50"
           )}
-          title={t(locale === 'en' ? 'english' : 'french')}
+          title={t(locale === 'en' ? 'english' : locale === 'fr' ? 'french' : 'dutch')}
         >
-          {locale === 'en' ? '🇬🇧' : '🇫🇷'}
+          {locale === 'en' ? '🇬🇧' : locale === 'fr' ? '🇫🇷' : '🇳🇱'}
           <span className="hidden sm:inline">
             {locale.toUpperCase()}
           </span>

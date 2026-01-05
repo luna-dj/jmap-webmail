@@ -25,6 +25,9 @@ import {
   Users,
   User,
   X,
+  Contact,
+  Calendar,
+  Filter,
 } from "lucide-react";
 import { cn, buildMailboxTree, MailboxNode, formatFileSize } from "@/lib/utils";
 import { Mailbox } from "@/lib/jmap/types";
@@ -419,6 +422,42 @@ export function Sidebar({
                 )}
 
                 <div className="border-t border-border mt-2 pt-2">
+                  {/* Contacts */}
+                  <button
+                    onClick={() => router.push(`/${params.locale}/contacts`)}
+                    className="w-full px-4 py-2 flex items-center justify-between hover:bg-muted transition-colors text-sm"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Contact className="w-4 h-4" />
+                      {t("contacts")}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </button>
+
+                  {/* Calendar */}
+                  <button
+                    onClick={() => router.push(`/${params.locale}/calendar`)}
+                    className="w-full px-4 py-2 flex items-center justify-between hover:bg-muted transition-colors text-sm"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      {t("calendar")}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </button>
+
+                  {/* Filters */}
+                  <button
+                    onClick={() => router.push(`/${params.locale}/filters`)}
+                    className="w-full px-4 py-2 flex items-center justify-between hover:bg-muted transition-colors text-sm"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Filter className="w-4 h-4" />
+                      {t("filters")}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </button>
+
                   {/* Settings */}
                   <button
                     onClick={() => router.push(`/${params.locale}/settings`)}

@@ -42,6 +42,7 @@ export default [
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
       "no-unused-vars": "off",
+      "no-case-declarations": "off",
     },
     settings: {
       react: {
@@ -50,11 +51,32 @@ export default [
     },
   },
   {
+    files: ["**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
+    },
+    rules: {
+      "no-unused-vars": ["warn", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_"
+      }],
+    },
+  },
+  {
     ignores: [
       ".next/**",
       "node_modules/**",
       "*.config.js",
       "*.config.mjs",
+      "lib/overture/**",
+      "lib/jmap-js/**",
+      "public/lib/**",
+      "dist/**",
+      "build/**",
+      "test-*.js",
     ],
   },
 ];

@@ -80,24 +80,24 @@ This document tracks the development status and planned features for JMAP Webmai
 ## Planned Features
 
 ### Address Book & Contacts
-- [ ] Contact store with CRUD operations
-- [ ] Contacts list view with search/filter
-- [ ] Contact details view/edit form
-- [ ] Contact groups management
+- [x] Contact store with CRUD operations
+- [x] Contacts list view with search/filter
+- [x] Contact details view/edit form
+- [x] Contact groups management
 - [ ] vCard import/export
-- [ ] JMAP contacts sync (if server supports)
-- [ ] Email autocomplete from contacts
-- [ ] Contacts integration in composer
+- [x] JMAP contacts sync (if server supports) - Local storage fallback implemented
+- [x] Email autocomplete from contacts
+- [x] Contacts integration in composer
 
 ### Advanced Features
-- [ ] Email filters and rules
-- [ ] Calendar integration (JMAP Calendars)
-- [ ] Email templates
-- [ ] Signature management
-- [ ] Vacation responder settings
-- [ ] Email aliases support
-- [ ] Advanced search with filters
-- [ ] Email encryption (PGP/GPG)
+- [x] Email filters and rules
+- [x] Calendar integration (JMAP Calendars) - Basic implementation with local storage
+- [x] Email templates
+- [x] Signature management
+- [x] Vacation responder settings
+- [x] Email aliases support
+- [x] Advanced search with filters
+- [x] Email encryption (PGP/GPG) - Basic implementation with key management
 
 ### Performance Optimizations
 - [ ] Virtual scrolling for large lists

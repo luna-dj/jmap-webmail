@@ -15,6 +15,9 @@ import { useEmailStore } from "@/stores/email-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useUIStore } from "@/stores/ui-store";
+import { useContactStore } from "@/stores/contact-store";
+import { useAliasStore } from "@/stores/alias-store";
+import { useFilterStore } from "@/stores/filter-store";
 import { useDeviceDetection } from "@/hooks/use-media-query";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { debug } from "@/lib/debug";
@@ -337,14 +340,21 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEmail?.id]);
 
-  // Handle new email notifications - play sound
+  // Handle new email notifications - play sound and execute filters
   useEffect(() => {
-    if (newEmailNotification) {
+    if (newEmailNotification && client) {
       playNotificationSound();
       debug.log('New email received:', newEmailNotification.subject);
+      
+      // Execute filters on new email
+      const { executeFilters } = useFilterStore.getState();
+      executeFilters(client, newEmailNotification).catch((error) => {
+        console.error('Failed to execute filters on new email:', error);
+      });
+      
       clearNewEmailNotification();
     }
-  }, [newEmailNotification, clearNewEmailNotification]);
+  }, [newEmailNotification, clearNewEmailNotification, client]);
 
   const handleEmailSend = async (data: {
     to: string[];
@@ -353,11 +363,31 @@ export default function Home() {
     subject: string;
     body: string;
     draftId?: string;
+    aliasId?: string;
   }) => {
     if (!client) return;
 
     try {
-      await sendEmail(client, data.to, data.subject, data.body, data.cc, data.bcc, data.draftId);
+      // Get alias if provided
+      let aliasEmail: string | undefined;
+      if (data.aliasId) {
+        const alias = useAliasStore.getState().getAlias(data.aliasId);
+        if (alias) {
+          aliasEmail = alias.email;
+        }
+      }
+      
+      await sendEmail(client, data.to, data.subject, data.body, data.cc, data.bcc, data.draftId, aliasEmail);
+      
+      // Auto-add recipients to contacts after successful send
+      const allRecipients = [...data.to, ...(data.cc || []), ...(data.bcc || [])];
+      if (allRecipients.length > 0) {
+        useContactStore.getState().addContactsFromEmails(allRecipients).catch((error) => {
+          console.error("Failed to add contacts:", error);
+          // Don't show error to user, this is a background operation
+        });
+      }
+      
       setShowComposer(false);
     } catch (error) {
       console.error("Failed to send email:", error);
@@ -485,9 +515,9 @@ export default function Home() {
     router.push(`/${params.locale}/login`);
   };
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = async (query: string, advancedFilter?: Record<string, unknown>) => {
     if (!client) return;
-    await searchEmails(client, query);
+    await searchEmails(client, query, advancedFilter);
   };
 
   const handleClearSearch = async () => {

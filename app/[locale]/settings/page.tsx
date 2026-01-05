@@ -9,9 +9,12 @@ import { AppearanceSettings } from '@/components/settings/appearance-settings';
 import { EmailSettings } from '@/components/settings/email-settings';
 import { AccountSettings } from '@/components/settings/account-settings';
 import { AdvancedSettings } from '@/components/settings/advanced-settings';
+import { SignatureSettings } from '@/components/settings/signature-settings';
+import { VacationSettings } from '@/components/settings/vacation-settings';
+import { AliasSettings } from '@/components/settings/alias-settings';
 import { cn } from '@/lib/utils';
 
-type Tab = 'appearance' | 'email' | 'account' | 'advanced';
+type Tab = 'appearance' | 'email' | 'account' | 'signatures' | 'vacation' | 'aliases' | 'advanced';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -23,6 +26,9 @@ export default function SettingsPage() {
     { id: 'appearance', label: t('tabs.appearance') },
     { id: 'email', label: t('tabs.email') },
     { id: 'account', label: t('tabs.account') },
+    { id: 'signatures', label: t('tabs.signatures') },
+    { id: 'vacation', label: t('tabs.vacation') },
+    { id: 'aliases', label: t('tabs.aliases') },
     { id: 'advanced', label: t('tabs.advanced') },
   ];
 
@@ -80,6 +86,9 @@ export default function SettingsPage() {
             {activeTab === 'appearance' && <AppearanceSettings />}
             {activeTab === 'email' && <EmailSettings />}
             {activeTab === 'account' && <AccountSettings />}
+            {activeTab === 'signatures' && <SignatureSettings />}
+            {activeTab === 'vacation' && <VacationSettings />}
+            {activeTab === 'aliases' && <AliasSettings />}
             {activeTab === 'advanced' && <AdvancedSettings />}
           </div>
         </div>
