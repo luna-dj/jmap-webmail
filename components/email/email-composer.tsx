@@ -7,6 +7,11 @@ import { Input } from "@/components/ui/input";
 import { X, Paperclip, Send, Save, Check, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
+import { useSignatureStore } from "@/stores/signature-store";
+import { useTemplateStore } from "@/stores/template-store";
+import { useAliasStore } from "@/stores/alias-store";
+import { EmailAutocomplete } from "./email-autocomplete";
+import { TemplateSelector } from "./template-selector";
 import type { Identity } from "@/lib/jmap/types";
 
 interface EmailComposerProps {
@@ -17,6 +22,7 @@ interface EmailComposerProps {
     subject: string;
     body: string;
     draftId?: string;
+    aliasId?: string;
   }) => void;
   onClose?: () => void;
   onDiscardDraft?: (draftId: string) => void;
@@ -92,6 +98,26 @@ export function EmailComposer({
   const [body, setBody] = useState(getInitialBody());
   const [showCc, setShowCc] = useState(!!getInitialCc());
   const [showBcc, setShowBcc] = useState(false);
+  
+  const { client, username } = useAuthStore();
+  const templateStore = useTemplateStore();
+  const templates = templateStore.templates;
+  const processTemplate = templateStore.processTemplate;
+  const { getDefaultSignature } = useSignatureStore();
+  const { aliases, selectedAlias, setSelectedAlias } = useAliasStore();
+  
+  // Insert default signature if composing new email
+  useEffect(() => {
+    if (mode === 'compose' && !replyTo) {
+      const defaultSignature = getDefaultSignature();
+      if (defaultSignature && !body.trim()) {
+        const signatureText = defaultSignature.html || defaultSignature.text || '';
+        if (signatureText) {
+          setBody(signatureText);
+        }
+      }
+    }
+  }, [mode, replyTo, body, getDefaultSignature]);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -99,8 +125,7 @@ export function EmailComposer({
   const [attachments, setAttachments] = useState<Array<{ file: File; blobId?: string; uploading?: boolean; error?: boolean }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [identity, setIdentity] = useState<Identity | null>(null);
-
-  const { client, username } = useAuthStore();
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
 
   // Fetch identity from JMAP
   useEffect(() => {
@@ -284,6 +309,7 @@ export function EmailComposer({
         subject,
         body,
         draftId: finalDraftId || undefined,
+        aliasId: selectedAlias?.id,
       });
 
       // Reset form
@@ -350,26 +376,59 @@ export function EmailComposer({
 
       <div className="flex-1 flex flex-col">
         <div className="space-y-2 px-4 py-3 border-b">
-          {identity && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground w-16">{t('from')}:</span>
+          {/* From field with alias selection */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground w-16">{t('from')}:</span>
+            {aliases.length > 0 ? (
+              <select
+                value={selectedAlias?.id || ''}
+                onChange={(e) => {
+                  const alias = aliases.find(a => a.id === e.target.value);
+                  setSelectedAlias(alias || null);
+                }}
+                className="flex-1 px-3 py-1.5 text-sm border rounded-md outline-none bg-background"
+              >
+                {identity && (
+                  <option value="">{identity.name && identity.name !== identity.email ? `${identity.name} <${identity.email}>` : identity.email}</option>
+                )}
+                {aliases.map((alias) => (
+                  <option key={alias.id} value={alias.id}>
+                    {alias.name ? `${alias.name} <${alias.email}>` : alias.email}
+                  </option>
+                ))}
+              </select>
+            ) : identity ? (
               <Input
                 type="text"
                 value={identity.name && identity.name !== identity.email ? `${identity.name} <${identity.email}>` : identity.email}
                 readOnly
                 className="flex-1 border-0 focus-visible:ring-0 bg-muted/50 cursor-not-allowed"
               />
-            </div>
-          )}
-          <div className="flex items-center gap-2">
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2 relative">
             <span className="text-sm text-muted-foreground w-16">{t('to')}:</span>
-            <Input
-              type="email"
-              placeholder="Recipient email addresses (comma separated)"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="flex-1 border-0 focus-visible:ring-0"
-            />
+            <div className="flex-1 relative">
+              <Input
+                type="email"
+                placeholder="Recipient email addresses (comma separated)"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className="border-0 focus-visible:ring-0"
+                onFocus={() => setShowAutocomplete(true)}
+                onBlur={() => setTimeout(() => setShowAutocomplete(false), 200)}
+              />
+              <EmailAutocomplete
+                query={to.split(',').pop()?.trim() || ''}
+                onSelect={(email) => {
+                  const parts = to.split(',');
+                  parts[parts.length - 1] = email;
+                  setTo(parts.join(', '));
+                  setShowAutocomplete(false);
+                }}
+                show={showAutocomplete && (to.split(',').pop()?.trim() || '').length > 0}
+              />
+            </div>
             <div className="flex gap-1">
               <Button
                 variant="ghost"
@@ -478,7 +537,7 @@ export function EmailComposer({
         )}
 
         <div className="flex items-center justify-between px-4 py-3 border-t">
-          <div>
+          <div className="flex gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -495,6 +554,15 @@ export function EmailComposer({
               <Paperclip className="w-4 h-4 mr-2" />
               {t('attach')}
             </Button>
+            {templates.length > 0 && (
+              <TemplateSelector
+                onSelectTemplate={(template) => {
+                  const processed = processTemplate(template, {});
+                  setSubject(processed.subject);
+                  setBody(processed.body);
+                }}
+              />
+            )}
           </div>
           <Button onClick={handleSend}>
             <Send className="w-4 h-4 mr-2" />

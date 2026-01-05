@@ -1,0 +1,26 @@
+services:
+  webmail:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jmap-webmail
+    restart: unless-stopped
+    ports:
+      - "3004:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+# # App name displayed in the UI
+#       - NEXT_PUBLIC_APP_NAME=HivePost Webmail
+#       - NEXT_PUBLIC_JMAP_SERVER_URL=https://hivepost.nl
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Optional: Add volumes for persistent data if needed
+    # volumes:
+    #   - ./data:/app/data

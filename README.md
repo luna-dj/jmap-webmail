@@ -67,12 +67,38 @@ This webmail client is designed to work seamlessly with [**Stalwart Mail Server*
 
 ## Getting Started
 
-### Prerequisites
+### Docker (Recommended)
 
-- Node.js 18+
+The easiest way to run JMAP Webmail is using Docker:
+
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the container
+docker-compose down
+```
+
+The application will be available at `http://localhost:3000`.
+
+For development with hot reload:
+
+```bash
+docker-compose -f docker-compose.dev.yml up
+```
+
+### Manual Installation
+
+#### Prerequisites
+
+- Node.js 20+ and npm (for local development)
+- Docker and Docker Compose (for containerized deployment)
 - A JMAP-compatible mail server (we recommend [Stalwart](https://stalw.art/))
 
-### Installation
+#### Installation
 
 ```bash
 # Clone the repository
@@ -86,7 +112,7 @@ npm install
 cp .env.example .env.local
 ```
 
-### Configuration
+#### Configuration
 
 Edit `.env.local` with your settings:
 
@@ -98,7 +124,7 @@ NEXT_PUBLIC_APP_NAME=My Webmail
 NEXT_PUBLIC_JMAP_SERVER_URL=https://mail.example.com
 ```
 
-### Development
+#### Development
 
 ```bash
 # Start development server
@@ -111,7 +137,7 @@ npm run typecheck
 npm run lint
 ```
 
-### Production Build
+#### Production Build
 
 ```bash
 # Build for production

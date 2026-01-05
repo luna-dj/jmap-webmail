@@ -46,11 +46,11 @@ interface EmailStore {
   loadMoreEmails: (client: JMAPClient) => Promise<void>;
   fetchEmailContent: (client: JMAPClient, emailId: string) => Promise<Email | null>;
   fetchQuota: (client: JMAPClient) => Promise<void>;
-  sendEmail: (client: JMAPClient, to: string[], subject: string, body: string, cc?: string[], bcc?: string[], draftId?: string) => Promise<void>;
+  sendEmail: (client: JMAPClient, to: string[], subject: string, body: string, cc?: string[], bcc?: string[], draftId?: string, aliasEmail?: string) => Promise<void>;
   deleteEmail: (client: JMAPClient, emailId: string) => Promise<void>;
   markAsRead: (client: JMAPClient, emailId: string, read: boolean) => Promise<void>;
   moveToMailbox: (client: JMAPClient, emailId: string, mailboxId: string) => Promise<void>;
-  searchEmails: (client: JMAPClient, query: string) => Promise<void>;
+  searchEmails: (client: JMAPClient, query: string, advancedFilter?: Record<string, unknown>) => Promise<void>;
   toggleStar: (client: JMAPClient, emailId: string) => Promise<void>;
 
   // Batch operations
@@ -62,7 +62,7 @@ interface EmailStore {
   setPushConnected: (connected: boolean) => void;
   handleStateChange: (change: StateChange, client: JMAPClient) => Promise<void>;
   refreshCurrentMailbox: (client: JMAPClient) => Promise<void>;
-  handleNewEmailNotification: (email: Email) => void;
+  handleNewEmailNotification: (email: Email, client?: JMAPClient) => Promise<void>;
   clearNewEmailNotification: () => void;
 
   // Thread expansion actions
@@ -282,10 +282,10 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
     }
   },
 
-  sendEmail: async (client, to, subject, body, cc, bcc, draftId) => {
+  sendEmail: async (client, to, subject, body, cc, bcc, draftId, aliasEmail) => {
     set({ isLoading: true, error: null });
     try {
-      await client.sendEmail(to, subject, body, cc, bcc, draftId);
+      await client.sendEmail(to, subject, body, cc, bcc, draftId, aliasEmail);
       // Refresh emails after sending
       await get().fetchEmails(client);
       set({ isLoading: false });
@@ -576,8 +576,8 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
     }
   },
 
-  searchEmails: async (client, query) => {
-    set({ isLoading: true, error: null, searchQuery: query, emails: [], hasMoreEmails: false, totalEmails: 0 }); // Clear emails for loading state
+  searchEmails: async (client, query, advancedFilter?: Record<string, unknown>) => {
+    set({ isLoading: true, error: null, searchQuery: query || '', emails: [], hasMoreEmails: false, totalEmails: 0 }); // Clear emails for loading state
     try {
       // Get the current mailbox to scope the search
       const selectedMailbox = get().selectedMailbox;
@@ -590,7 +590,7 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
 
       // Get emails per page from settings
       const emailsPerPage = useSettingsStore.getState().emailsPerPage;
-      const result = await client.searchEmails(query, jmapMailboxId, accountId, emailsPerPage, 0);
+      const result = await client.searchEmails(query || '', jmapMailboxId, accountId, emailsPerPage, 0, advancedFilter);
       set({
         emails: result.emails,
         hasMoreEmails: result.hasMore,
@@ -824,7 +824,7 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
 
       // If the first email changed, we have a new email - trigger notification
       if (currentFirstEmailId !== newFirstEmailId && result.emails[0]) {
-        get().handleNewEmailNotification(result.emails[0]);
+        await get().handleNewEmailNotification(result.emails[0], client);
       }
 
       set({
@@ -838,7 +838,17 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
     }
   },
 
-  handleNewEmailNotification: (email) => {
+  handleNewEmailNotification: async (email, client?: JMAPClient) => {
+    // Execute filters on new email
+    if (client) {
+      try {
+        const filterStoreModule = await import('@/stores/filter-store');
+        await filterStoreModule.useFilterStore.getState().executeFilters(client, email);
+      } catch (error) {
+        console.error('Failed to execute filters on new email:', error);
+      }
+    }
+
     // Set the new email notification state
     // This can be consumed by a toast component
     set({ newEmailNotification: email });
